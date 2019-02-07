@@ -1,6 +1,6 @@
 # What happens when ... Kubernetes edition!
 
-Kubernetes のクラスタに対して nginx を展開したいと思っているとします。きっと私は端末にこのように入力するでしょう。
+想像してみてください。私は Kubernetes のクラスタに対して nginx を展開したいと思っています。きっと私は端末にこのように入力するでしょう。
 
 ```bash
 kubectl run --image=nginx --replicas=3
