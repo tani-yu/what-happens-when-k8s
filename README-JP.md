@@ -104,7 +104,7 @@ initializers:
 
 ## kubelet 
 
-## Podの同期
+### Pod sync
 これまでのメインコントローラのループの流れについてまとめます。HTTPリクエストは認証、認可、アドミッションコントロールのステージを通って来ます。Deployment, Replicaset, 3つのPodのリソースはetcdに保存されます。一連のinitializerが実行されます。最後にPodは適切なノードに配置されるようにスケジュールされます。私達が想像している状態はetcd内に保存されています。次のステップではワーカーノードをまたいで分散させます。これは、kubernetesのような分散システムではポイントとなります！これはkubeletと呼ばれるコンポーネントを通して実行されます。さあ流れを追ってみましょう！
 
 kubeletはkubernetesクラスターすべてのノードで動いるエージェントで、Podのライフルサイクルの責任を負っています。これは、Pod（kubernetesの概念）の抽象化と構成要素であるコンテナの間のすべての変換ロジックを取り扱うことを意味します。また、ボリュームのマウント、コンテナのlogging、ガベージコレクションとその他の重要なことに関連するのも取り扱っています。
@@ -125,7 +125,7 @@ kubeletについて簡潔に説明するとコントローラのようなもの�
 1. `Spec.ImagePullSecret`で定義されたすべてのシークレットは、後でコンテナに注入できるように、apiserverから取得されます。
 1. その後、コンテナランタイムはコンテナを実行します。（詳細は後述）
 
-# CRI and pause containers
+### CRI and pause containers
 現時点でセットアップのほとんどが終わり、コンテナを立ち上げる準備ができました。立ち上げるソフトウェアは、コンテナランタイムと呼ばれています（例えば、dockerやrkt）。拡張性を高めるために、kubeletのv1.5.0からCRI(Container Runtime Interface)と呼ばれる概念を使用しています。一言で言うと、CRIはkubeletと特定のランタイム実装の間の抽象化を提供します。 通信はprotocol buffe（早いJSONのようなもの）、gRPC API(kubernetes操作でより良いパフォーマンスを出せるAPI)を介して行われます。これは、kubeletとランタイムの間の定義済みの契約を使うことによって、コンテナの実際の詳細実装は、大部分が無関係になるため非常に素晴らしいアイディアです。重要であるのは契約です。これはcre Kubernetesのcode変更する必要がないので、最小限のオーバーヘッドで新しいランタイムを追加することができます。
 
 ここで、コンテナのデプロイの話に戻りましょう… 最初にpodが開始されたとき、kubeletは[ `RunPodSandbox`リモートプロシジャーコール（RPC）を呼び出します](https://github.com/kubernetes/kubernetes/blob/2d64ce5e8e45e26b02492d2b6c85e5ebfb1e4761/pkg/kubelet/kuberuntime/kuberuntime_sandbox.go#L51)。 "sandbox" はPodを連想させるkubernetesの用語で一連のコンテナを表すCRI用語になります。この用語は故意に曖昧になっているので、実際にコンテナを使用できない他のランタイムの意味を失うことはありません。（sandboxがVMになるハイパーバイザーベースのランタイムを想像してください）
