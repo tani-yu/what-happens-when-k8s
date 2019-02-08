@@ -31,7 +31,6 @@ kubectl run --image=nginx --replicas=3
 
 ## kubectl
 
-
 ### Validation and generators
 
 
