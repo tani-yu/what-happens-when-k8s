@@ -184,7 +184,7 @@ Owner Reference の設計がもたらすもう 1 つの小さな利点はステ�
 
 インフォーマーはコントローラーにストレージイベントをサブスクライブさせ、それらに関係するリソースのリストを簡単に取得するパターンです。うまく動くように抽象化を提供することの他に、キャッシング (キャッシングは不要な kube-apiserver のコネクションを減らすのと、サーバー側とコントローラー側での多重のシリアライゼーションを減らすため重要です) などの多くの仕組みも管理しています。この設計を使用することで、他のコントローラーのことを気にすること無くスレッドセーフな方法で通信できるようになります。
 
-インフォーマーがコントローラーに関してどのように機能するかについての詳細は、この [ブログ](https://github.com/kubernetes/kubernetes/blob/master/pkg/controller/replicaset/replica_set.go#L460) をチェックしてください。
+インフォーマーがコントローラーに関してどのように機能するかについての詳細は、この [ブログ](http://borismattijssen.github.io/articles/kubernetes-informers-controllers-reflectors-stores) をチェックしてください。
 
 ### Scheduler
 
