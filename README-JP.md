@@ -133,7 +133,7 @@ Dockerを使うケースでは、ランタイム内でsandboxが”pause”コ�
 Cgroupsは、Linuxがリソースを割り与える方法であるため（リソース使用量を監視する警察のような）重要になります。リソースの確保が保証され、強制隔離されたプロセスをホストするために、Dockerはこれらの両方の機能を使用します。詳細は `b0rk` の驚くべき投稿を確認して下さい。 [What even is a Container?](https://jvns.ca/blog/2016/10/10/what-even-is-a-container/)
 
 pauseコンテナはnamespaceのすべてをホストし、子コンテナがそれを共有できる方法を提供します。同じネットワークnamespaceの一部であることによって得られる一つのメリットは、同じPod内のコンテナが`localhost` を使って他のものを参照できることです。 
-pauseコンテナの２つ目の役割はPID ネームスペースを関連付けることです。これらのnamespaceのタイプは木の階層構造を形成し、 トップの"init"プロセスが死んだプロセスの ”刈り取り” をする責任を持ちます。どのように動くかの詳細は、[great blog post](https://www.ianlewis.org/en/almighty-pause-container)をチェックして下さい。pauseコンテナが作られた後、ディスクにチェックポイントされ動き始めます。
+pauseコンテナの２つ目の役割はPID ネームスペースを関連付けることです。これらのnamespaceのタイプは木の階層構造を形成し、 トップの"init"プロセスが死んだプロセスの ”刈り取り” をする責任を持ちます。どのように動くかの詳細は、[great blog post](https://www.ianlewis.org/en/almighty-pause-container)をチェックして下さい。pauseコンテナが作られた後、ディスクにチェックポイント(保持)され動き始めます。
 
 ### CNI and pod networking
 
