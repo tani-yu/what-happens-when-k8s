@@ -347,3 +347,15 @@ kubeletがPodのネットワークを設定すると、タスクを"CNI"プラ�
 
 1つ以上のWorkerノードで3つのコンテナが実行中になっていることでしょう。すべてのネットワーキング、volume, secretはkubeletによって生成され、CRIプラグインを通してコンテナになりました。
 
+---
+
+翻訳者一覧 (アルファベット順)
+- @chokkoyamada 
+- @kentakozuka
+- @makocchi-git
+- @shiftky
+- @tani-yu
+- @ww24
+- @yasuhiro1711
+
+翻訳のフィードバックは[こちら](https://github.com/cloud-native-lab/what-happens-when-k8s)に issue もしくは Pull Request をお願いします。
