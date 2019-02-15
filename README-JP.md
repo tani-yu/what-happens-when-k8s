@@ -350,12 +350,12 @@ kubeletがPodのネットワークを設定すると、タスクを"CNI"プラ�
 ---
 
 翻訳者一覧 (アルファベット順)
-- @chokkoyamada 
-- @kentakozuka
-- @makocchi-git
-- @shiftky
-- @tani-yu
-- @ww24
-- @yasuhiro1711
+- [@chokkoyamada](https://github.com/chokkoyamada)
+- [@kentakozuka](https://github.com/kentakozuka)
+- [@makocchi-git](https://github.com/makocchi-git)
+- [@shiftky](https://github.com/shiftky)
+- [@tani-yu](https://github.com/tani-yu)
+- [@ww24](https://github.com/ww24)
+- [@yasuhiro1711](https://github.com/yasuhiro1711)
 
 翻訳のフィードバックは[こちら](https://github.com/cloud-native-lab/what-happens-when-k8s)に issue もしくは Pull Request をお願いします。
