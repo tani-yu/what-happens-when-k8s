@@ -86,13 +86,15 @@ apiserver はどのようにリクエストを認証するでしょうか。サ�
 - [bearer トークンハンドラー](https://github.com/kubernetes/apiserver/blob/51bebaffa01be9dc28195140da276c2f39a10cd4/pkg/authentication/request/bearertoken/bearertoken.go#L38) は提供された(HTTP Authorizationヘッダーに指定されている)トークンが`--token-auth-file`で指定されたディスク上のファイルに存在するか検証します
 - [basicauth ハンドラー](https://github.com/kubernetes/apiserver/blob/51bebaffa01be9dc28195140da276c2f39a10cd4/plugin/pkg/authenticator/request/basicauth/basicauth.go#L37) はHTTP Basic認証の資格情報が自身のローカル状態と同様に一致するか検証します
 
-_すべての_ 認証方式が失敗すると、[リクエストは失敗](https://github.com/kubernetes/apiserver/blob/20bfbdf738a0643fe77ffd527b88034dcde1b8e3/pkg/authentication/request/union/union.go#L71)して集約されたエラーが返却されます。認証が施工すると`Authorization`ヘッダがリクエストから取り除かれ、リクエストのコンテキストに[ユーザー情報が追加されます](https://github.com/kubernetes/apiserver/blob/e30df5e70ef9127ea69d607207c894251025e55b/pkg/endpoints/filters/authentication.go#L71-L75)。これにより将来の段階(認可およびアドミッションコントローラーなど)で、以前に確立されたユーザーのIDにアクセスできるようになります。
+_すべての_ 認証方式が失敗すると、[リクエストは失敗](https://github.com/kubernetes/apiserver/blob/20bfbdf738a0643fe77ffd527b88034dcde1b8e3/pkg/authentication/request/union/union.go#L71)して集約されたエラーが返却されます。認証が成功すると`Authorization`ヘッダがリクエストから取り除かれ、リクエストのコンテキストに[ユーザー情報が追加されます](https://github.com/kubernetes/apiserver/blob/e30df5e70ef9127ea69d607207c894251025e55b/pkg/endpoints/filters/authentication.go#L71-L75)。これにより将来の段階(認可およびアドミッションコントローラーなど)で、以前に確立されたユーザーのIDにアクセスできるようになります。1つの認証方式が成功すると、リクエストは続行します。
 
 ### Authorization
 
 さて、リクエストは送信されて、kube-apiserverは我々が我々であると言ったことを検証することに成功しました。なんて安心なんでしょう。しかしながら、まだ終わっていません。我々であると言ったのは我々かもしれませんが、操作を実行する権限を持っているでしょうか。結局の所、同一性と権限は同じ事ではありません。続けるためには、kube-apiserverは我々を認可する必要があります。
 
-kube-apiserverが認可を扱う方法は認証ととても似ています。フラグの入力に基づいて、すべての受信リクエスト毎に認可方式を組み立てます。_すべての_ 認可方式がリクエストを拒否した場合、リクエストの結果として`Forbidden`が応答され、[それ以降は処理されません](https://github.com/kubernetes/apiserver/blob/e30df5e70ef9127ea69d607207c894251025e55b/pkg/endpoints/filters/authorization.go#L60)。v1.8に含まれている認可方式の一例です:
+kube-apiserverが認可を扱う方法は認証ととても似ています。フラグの入力に基づいて、すべての受信リクエスト毎に認可方式を組み立てます。_すべての_ 認可方式がリクエストを拒否した場合、リクエストの結果として`Forbidden`が応答され、[それ以降は処理されません](https://github.com/kubernetes/apiserver/blob/e30df5e70ef9127ea69d607207c894251025e55b/pkg/endpoints/filters/authorization.go#L60)。
+
+v1.8に含まれている認可方式の一例です:
 
 - [webhook](https://github.com/kubernetes/apiserver/blob/d299c880c4e33854f8c45bdd7ab599fb54cbe575/plugin/pkg/authorizer/webhook/webhook.go#L143), クラスタ外のHTTP(S)サービスと対話します
 - [ABAC](https://github.com/kubernetes/kubernetes/blob/77b83e446b4e655a71c315ad3f3890dc2a220ccf/pkg/auth/authorizer/abac/abac.go#L223), 静的ファイルで定義されているポリシーを適用します
@@ -105,7 +107,7 @@ kube-apiserverが認可を扱う方法は認証ととても似ています。フ
 
 さて、この時点で我々はkube-apiserverに認証され認可されました。なにが残っているでしょうか。kube-apiserverの視点では、誰であるか信じ続行することを許可していますが、Kubernetesではシステムの他の部分が、何が起こるべきで何が起こるべきでないかについて、強い判断を持ちます。ここで[アドミッションコントローラー](https://kubernetes.io/docs/admin/admission-controllers/#what-are-they)が登場します。
 
-認証はユーザーが権限を持っているかどうかについて答える事に焦点を当てていますが、一方でアドミッションコントローラーはリクエストを傍受してクラスタのより広い期待値とルールにマッチするよう保証します。これらはオブジェクトがetcdで永続化される前の最後の砦です。そのため操作が予期せぬ結果や悪影響を生じないよう、残りのシステム確認をカプセル化します。
+認可はユーザーが権限を持っているかどうかについて答える事に焦点を当てていますが、一方でアドミッションコントローラーはリクエストを傍受してクラスタのより広い期待値とルールにマッチするよう保証します。これらはオブジェクトがetcdで永続化される前の最後の砦です。そのため操作が予期せぬ結果や悪影響を生じないよう、残りのシステム検査をまとめて行います。
 
 アドミッションコントローラーの仕組みは認証と認可の仕組みに似ていますが、1つ異なる所があります。認証方式、認可方式のチェーンと違い、1つのアドミッションコントローラーが失敗すると、チェーン全体が壊れリクエストは失敗します。
 
@@ -115,7 +117,7 @@ kube-apiserverが認可を扱う方法は認証ととても似ています。フ
 
 - `InitialResources`は過去の使用量に基づいて、コンテナのリソースにデフォルトのリソース制限を設定します。
 - `LimitRanger`はコンテナのrequestsとlimitsにデフォルトを設定するか、特定のリソースの上限を適用します。(2GB以下のメモリ、デフォルトは512MB)
-- `ResourceQuota`はネームスペース内のオブジェクト(pods, rc, service load balancers)の数もしくは全体の消費リソース(cpu, memory, disk)を算出して拒否します。
+- `ResourceQuota`はネームスペース内のオブジェクト(pods, rc, service load balancers)の数もしくは消費リソースの総計(cpu, memory, disk)を算出して拒否します。
 
 ## etcd
 
