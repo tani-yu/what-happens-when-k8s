@@ -57,7 +57,7 @@ Deployment を作成したいということが分かると、`DeploymentV1Beta1
 
 ### API groups and version negotiation
 
-話を続ける前に説明すべきこととして、Kubernetes は _バージョン管理された_ API を使っており、それらは API グループに分類されているということです。API グループは、似たリソースをカテゴライズしてより簡単に推測できるようにすることを目的にしています。それはまた、単一のモノリシックな API に対する良い代替手段を提供します。Deployment の API グループは `apps` と呼ばれ、最新バージョンは `v1`です。Deployment のマニフェストの上部に、`apiVersion: apps/v1` と記載する必要があるのはこのためです。
+話を続ける前に説明すべきこととして、Kubernetes は _バージョン管理された_ API を使っており、それらは API グループに分類されているということです。API グループは、似たリソースをカテゴライズしてより簡単に推測できるようにすることを目的にしています。それはまた、単一のモノリシックな API に対する良い代替手段を提供します。Deployment の API グループは `apps` と呼ばれ、最新バージョンは `v1` です。Deployment のマニフェストの上部に、`apiVersion: apps/v1` と記載する必要があるのはこのためです。
 
 いずれにしても、kubectl がランタイムオブジェクトを生成した後、[適切な API グループとバージョンを見つけ](https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/run.go#L580-L597)、その後、そのリソースの様々な REST セマンティクスを認識する[バージョン化されたクライアントを組み立てます](https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/run.go#L598)。この検出ステージはバージョンネゴシエーションと呼ばれ、全ての利用可能な API グループを取得するために、kubectl がリモート API 上の `/apis` パスをスキャンすることを含みます。kube-apiserver はそのスキーマドキュメントをこのパスで公開しているため、クライアントは容易にディスカバリを行うことができます。
 
