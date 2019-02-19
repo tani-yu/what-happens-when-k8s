@@ -81,7 +81,7 @@ Deployment を作成したいということが分かると、`DeploymentV1Beta1
 - x509 証明書は [`tls.TLSConfig`](https://github.com/kubernetes/client-go/blob/82aa063804cf055e16e8911250f888bc216e8b61/rest/transport.go#L80-L89) を利用して送信されます。(これはルートCAも含みます)
 - bearer トークンは "Authorization" HTTP ヘッダで[送信されます](https://github.com/kubernetes/client-go/blob/c6f8cf2c47d21d55fa0df928291b2580544886c8/transport/round_trippers.go#L314)
 - ユーザ名とパスワードは HTTP ベーシック認証を通して[送信されます](https://github.com/kubernetes/client-go/blob/c6f8cf2c47d21d55fa0df928291b2580544886c8/transport/round_trippers.go#L223)
-- OpenID 認証プロセスはあらかじめユーザーによって手動で処理され、bearerトークンのように送信されるトークンを生成します
+- OpenID 認証プロセスはあらかじめユーザによって手動で処理され、bearerトークンのように送信されるトークンを生成します
 
 ## kube-apiserver
 
@@ -89,13 +89,14 @@ Deployment を作成したいということが分かると、`DeploymentV1Beta1
 
 リクエストが送られて、次に何が起こるでしょうか。ここで kube-apiserver が登場します。すでに説明したように、kube-apiserver は永続化そしてクラスタの状態を取得するためのシステムコンポーネントとクライアントの主要なインターフェースです。その機能を実行するには、誰が送信者か検証できる必要があります。この過程は認証と呼ばれます。
 
-apiserver はどのようにリクエストを認証するでしょうか。サーバーが最初に起動する時、ユーザーに与えられたすべての[CLIフラグ](https://kubernetes.io/docs/admin/kube-apiserver/)を確認し、適切な認証方式のリストを組み立てます。例を見てみましょう。`--client-ca-file`が渡された場合は、x509認証方式を追加し、`--token-auth-file`が与えられた事を確認した時、token認証方式をリストに追加します。リクエストを受信する度に、[1つでも成功するまで認証方式チェーンを通して実行されます](https://github.com/kubernetes/apiserver/blob/51bebaffa01be9dc28195140da276c2f39a10cd4/pkg/authentication/request/union/union.go#L54):
+apiserver はどのようにリクエストを認証するでしょうか。サーバが最初に起動する時、ユーザに与えられたすべての[CLIフラグ](https://kubernetes.io/docs/admin/kube-apiserver/)を確認し、適切な認証方式のリストを組み立てます。例を見てみましょう。`--client-ca-file`が渡された場合は、x509認証方式を追加し、`--token-auth-file`が与えられた事を確認した時、token認証方式をリストに追加します。リクエストを受信する度に、[1つでも成功するまで認証方式チェーンを通して実行されます](https://github.com/kubernetes/apiserver/blob/51bebaffa01be9dc28195140da276c2f39a10cd4/pkg/authentication/request/union/union.go#L54):
+
 
 - [x509 ハンドラ](https://github.com/kubernetes/apiserver/blob/51bebaffa01be9dc28195140da276c2f39a10cd4/pkg/authentication/request/x509/x509.go#L60) はHTTPリクエストがCAルート証明書によって署名されたTLS鍵でエンコードされていることを検証します
-- [bearer トークンハンドラ](https://github.com/kubernetes/apiserver/blob/51bebaffa01be9dc28195140da276c2f39a10cd4/pkg/authentication/request/bearertoken/bearertoken.go#L38) は提供された(HTTP Authorizationヘッダーに指定されている)トークンが`--token-auth-file`で指定されたディスク上のファイルに存在するか検証します
+- [bearer トークンハンドラ](https://github.com/kubernetes/apiserver/blob/51bebaffa01be9dc28195140da276c2f39a10cd4/pkg/authentication/request/bearertoken/bearertoken.go#L38) は提供された(HTTP Authorizationヘッダに指定されている)トークンが`--token-auth-file`で指定されたディスク上のファイルに存在するか検証します
 - [basicauth ハンドラ](https://github.com/kubernetes/apiserver/blob/51bebaffa01be9dc28195140da276c2f39a10cd4/plugin/pkg/authenticator/request/basicauth/basicauth.go#L37) はHTTP Basic認証の資格情報が自身のローカル状態と同様に一致するか検証します
 
-_すべての_ 認証方式が失敗すると、[リクエストは失敗](https://github.com/kubernetes/apiserver/blob/20bfbdf738a0643fe77ffd527b88034dcde1b8e3/pkg/authentication/request/union/union.go#L71)して集約されたエラーが返却されます。認証が成功すると`Authorization`ヘッダがリクエストから取り除かれ、リクエストのコンテキストに[ユーザー情報が追加されます](https://github.com/kubernetes/apiserver/blob/e30df5e70ef9127ea69d607207c894251025e55b/pkg/endpoints/filters/authentication.go#L71-L75)。これにより将来の段階(認可およびアドミッションコントローラなど)で、以前に確立されたユーザーのIDにアクセスできるようになります。1つの認証方式が成功すると、リクエストは続行します。
+_すべての_ 認証方式が失敗すると、[リクエストは失敗](https://github.com/kubernetes/apiserver/blob/20bfbdf738a0643fe77ffd527b88034dcde1b8e3/pkg/authentication/request/union/union.go#L71)して集約されたエラーが返却されます。認証が成功すると`Authorization`ヘッダがリクエストから取り除かれ、リクエストのコンテキストに[ユーザ情報が追加されます](https://github.com/kubernetes/apiserver/blob/e30df5e70ef9127ea69d607207c894251025e55b/pkg/endpoints/filters/authentication.go#L71-L75)。これにより将来の段階(認可およびアドミッションコントローラなど)で、以前に確立されたユーザのIDにアクセスできるようになります。1つの認証方式が成功すると、リクエストは続行します。
 
 ### Authorization
 
@@ -116,7 +117,7 @@ v1.8に含まれている認可方式の一例です:
 
 さて、この時点で我々は kube-apiserver に認証され認可されました。なにが残っているでしょうか。kube-apiserver の視点では、誰であるか信じ続行することを許可していますが、Kubernetes ではシステムの他の部分が、何が起こるべきで何が起こるべきでないかについて、強い判断を持ちます。ここで[アドミッションコントローラ](https://kubernetes.io/docs/admin/admission-controllers/#what-are-they)が登場します。
 
-認可はユーザーが権限を持っているかどうかについて答える事に焦点を当てていますが、一方でアドミッションコントローラはリクエストを傍受してクラスタのより広い期待値とルールにマッチするよう保証します。これらはオブジェクトがetcdで永続化される前の最後の砦です。そのため操作が予期せぬ結果や悪影響を生じないよう、残りのシステム検査をまとめて行います。
+認可はユーザが権限を持っているかどうかについて答える事に焦点を当てていますが、一方でアドミッションコントローラはリクエストを傍受してクラスタのより広い期待値とルールにマッチするよう保証します。これらはオブジェクトがetcdで永続化される前の最後の砦です。そのため操作が予期せぬ結果や悪影響を生じないよう、残りのシステム検査をまとめて行います。
 
 アドミッションコントローラの仕組みは認証と認可の仕組みに似ていますが、1つ異なる所があります。認証方式、認可方式のチェーンと違い、1つのアドミッションコントローラが失敗すると、チェーン全体が壊れリクエストは失敗します。
 
@@ -221,9 +222,9 @@ Owner Reference の設計がもたらすもう 1 つの小さな利点はステ�
 
 ### Informers
 
-もう気づいているかも知れませんが、RBAC Authorizer や Deployment コントローラなどの一部のコントローラは動作するためにクラスターの状態を持ってくる必要があります。RBAC Authorizer の例に戻ると、我々はリクエストが来たときに Authenticator が初期のユーザー状態の表現をあとの処理で使用するために保存するということを知っています。それから RBAC Authorizer はこれを使用してそのユーザーに関連する全ての Role と Role Binding を etcd 内から取得します。コントローラはどのようにしてそのようなリソースにアクセスや修正をすることになっているのでしょうか？これは一般的なユースケースであり、Kubernetes 内のインフォーマによって解決されていることがわかります。
+もう気づいているかも知れませんが、RBAC Authorizer や Deployment コントローラなどの一部のコントローラは動作するためにクラスターの状態を持ってくる必要があります。RBAC Authorizer の例に戻ると、我々はリクエストが来たときに Authenticator が初期のユーザー状態の表現をあとの処理で使用するために保存するということを知っています。それから RBAC Authorizer はこれを使用してそのユーザに関連する全ての Role と Role Binding を etcd 内から取得します。コントローラはどのようにしてそのようなリソースにアクセスや修正をすることになっているのでしょうか？これは一般的なユースケースであり、Kubernetes 内のインフォーマによって解決されていることがわかります。
 
-インフォーマはコントローラにストレージイベントをサブスクライブさせ、それらに関係するリソースのリストを簡単に取得するパターンです。うまく動くように抽象化を提供することの他に、キャッシング (キャッシングは不要な kube-apiserver のコネクションを減らすのと、サーバー側とコントローラ側での多重のシリアライゼーションを減らすため重要です) などの多くの仕組みも管理しています。この設計を使用することで、他のコントローラのことを気にすること無くスレッドセーフな方法で通信できるようになります。
+インフォーマはコントローラにストレージイベントをサブスクライブさせ、それらに関係するリソースのリストを簡単に取得するパターンです。うまく動くように抽象化を提供することの他に、キャッシング (キャッシングは不要な kube-apiserver のコネクションを減らすのと、サーバ側とコントローラ側での多重のシリアライゼーションを減らすため重要です) などの多くの仕組みも管理しています。この設計を使用することで、他のコントローラのことを気にすること無くスレッドセーフな方法で通信できるようになります。
 
 インフォーマがコントローラに関してどのように機能するかについての詳細は、この [ブログ記事](http://borismattijssen.github.io/articles/kubernetes-informers-controllers-reflectors-stores) をチェックしてください。
 
@@ -235,7 +236,7 @@ Owner Reference の設計がもたらすもう 1 つの小さな利点はステ�
 
 適切な Pod を探すために、とあるスケジューリングアルゴリズムが使用されます。デフォルトのスケジューリングアルゴリズムの流れは下記のようになっています:
 
-1. スケジューラが起動すると [デフォルトの Predicate チェインが登録](https://github.com/kubernetes/kubernetes/blob/2d64ce5e8e45e26b02492d2b6c85e5ebfb1e4761/plugin/pkg/scheduler/algorithmprovider/defaults/defaults.go#L65-L81) されます。これら Predicate は評価すると Pod を動かすのに適している [Node をフィルタ](https://github.com/kubernetes/kubernetes/blob/2d64ce5e8e45e26b02492d2b6c85e5ebfb1e4761/plugin/pkg/scheduler/core/generic_scheduler.go#L117) する効率的な関数です。例えば PodSpec が明示的に CPU または RAM リソースを要求しており、かつとある Node が容量不足により要求を満たせない場合は、その Node を Pod のスケジューリング候補から除外します。(リソース容量は "_合計容量_ - 現在動いているコンテナの _総リクエスト容量_" により求められます)
+1. スケジューラが起動すると [デフォルトの Predicate チェーンが登録](https://github.com/kubernetes/kubernetes/blob/2d64ce5e8e45e26b02492d2b6c85e5ebfb1e4761/plugin/pkg/scheduler/algorithmprovider/defaults/defaults.go#L65-L81) されます。これら Predicate は評価すると Pod を動かすのに適している [Node をフィルタ](https://github.com/kubernetes/kubernetes/blob/2d64ce5e8e45e26b02492d2b6c85e5ebfb1e4761/plugin/pkg/scheduler/core/generic_scheduler.go#L117) する効率的な関数です。例えば PodSpec が明示的に CPU または RAM リソースを要求しており、かつとある Node が容量不足により要求を満たせない場合は、その Node を Pod のスケジューリング候補から除外します。(リソース容量は "_合計容量_ - 現在動いているコンテナの _総リクエスト容量_" により求められます)
 
 1. 適切な Node がすべて選択されると、適切度をランク付けするために一連の [優先度関数](https://github.com/kubernetes/kubernetes/blob/2d64ce5e8e45e26b02492d2b6c85e5ebfb1e4761/plugin/pkg/scheduler/core/generic_scheduler.go#L354-L360) がそれらの Node に対して実行されます。例えば、システム上でワークロードを拡散させるためには、他の Node よりリソース要求が少ない Node が好まれます (これは実行中のワークロードが少ないことを示すためです) 。それらの関数を実行することにより、各 Node に数値でランク付けを行います。それから、高くランク付けされた Node がスケジューリングに採用されます。
 
@@ -252,7 +253,7 @@ kube-apiserver がその Binding オブジェクトを受け取ると、レジ�
 ### Pod sync
 これまでのメインコントローラのループの流れについてまとめます。HTTPリクエストは認証、認可、アドミッションコントロールのステージを通って来ます。Deployment, Replicaset, 3つの Pod のリソースはetcdに保存されます。一連の initializer が実行されます。最後に Pod は適切なノードに配置されるようにスケジュールされます。私達が想像している状態はetcd内に保存されています。次のステップではワーカーノードをまたいで分散させます。これは、kubernetes のような分散システムではポイントとなります！これは kubelet と呼ばれるコンポーネントを通して実行されます。さあ流れを追ってみましょう！
 
-kubelet は kubernetes クラスターすべてのノードで動いるエージェントで、Pod のライフルサイクルの責任を負っています。これは、Pod（kubernetesの概念）の抽象化と構成要素であるコンテナの間のすべての変換ロジックを取り扱うことを意味します。また、ボリュームのマウント、コンテナのlogging、ガベージコレクションとその他の多くの重要なことに関連するすべてのロジックを取り扱っています。
+kubelet は kubernetes クラスタすべてのノードで動いるエージェントで、Pod のライフルサイクルの責任を負っています。これは、Pod（kubernetesの概念）の抽象化と構成要素であるコンテナの間のすべての変換ロジックを取り扱うことを意味します。また、ボリュームのマウント、コンテナのlogging、ガベージコレクションとその他の多くの重要なことに関連するすべてのロジックを取り扱っています。
 
 kubelet について簡潔に説明するとコントローラのようなものです！20秒ごと（この値は設定可能）に kube-apiserver に Pod を問い合わせ、 `NodeName` がkubeletの動いているノードの[名前と一致するもの]((https://github.com/kubernetes/kubernetes/blob/3b66adb8bc6929e1205bcb2bc32f380c39be8381/pkg/kubelet/config/apiserver.go#L34) )をフィルタリングします。kubeletがリストを持っていると、自身の内部キャッシュと比較することによって新たな追加を検出し、不一致が存在すれば同期を始めます。その同期のプロセスはがどのようなものか見てみましょう。
 
@@ -313,10 +314,10 @@ kubelet が Pod のネットワークを設定すると、タスクを"CNI"プ�
 この次の話は CNI プラグインに依存していますが、引き続き bridgeCNI プラグインを見てみましょう。
 
 1. プラグインは最初に root のネットワーク Namespace にローカルの Linux ブリッジを設定し、そのホスト上のすべてのコンテナにサービスを提供します。
-2. 次に、Pause コンテナのネットワーク Namespace にインターフェイス（vethペアの一方の端）を挿入し、もう一方の端をブリッジに接続します。vethペアの概念を捉えるのに最適なのは、これを大きなチューブと捉えることです。一方がコンテナに接続され、もう一方がルートネットワークNamespaceにあり、パケットがその間を通過できるようになります。
-3. 次に、PauseコンテナのインターフェイスにIPを割り当て、ルーティングを設定します。これにより、Podに独自のIPアドレスが割り当てられます。IP割り当ては、JSON構成に指定されているIPAMプロバイダーに委任されます。
+2. 次に、Pause コンテナのネットワーク Namespace にインターフェース（vethペアの一方の端）を挿入し、もう一方の端をブリッジに接続します。vethペアの概念を捉えるのに最適なのは、これを大きなチューブと捉えることです。一方がコンテナに接続され、もう一方がルートネットワークNamespaceにあり、パケットがその間を通過できるようになります。
+3. 次に、PauseコンテナのインターフェースにIPを割り当て、ルーティングを設定します。これにより、Podに独自のIPアドレスが割り当てられます。IP割り当ては、JSON構成に指定されているIPAMプロバイダーに委任されます。
   - IPAMプラグインは、メインネットワークのプラグインと似ています。バイナリを介して呼び出され、標準化されたインターフェースを持ちます。それぞれがコンテナのインターフェースのIP /サブネットを、ゲートウェイルーティングとともに決定し、この情報をメインプラグインに返す必要があります。最も一般的なIPAMプラグインは`host-local` と呼ばれ、事前定義されたアドレス範囲のセットからIPアドレスを割り当てます。状態をホストファイルシステムのローカルに保存するため、単一ホスト上のIPアドレスの一意性が保証されます。
-4. DNSの場合、kubeletはCNIプラグインに内部DNSサーバーのIPアドレスを指定します。これにより、コンテナのresolv.confファイルが適切に設定されます。
+4. DNSの場合、kubeletはCNIプラグインに内部DNSサーバのIPアドレスを指定します。これにより、コンテナのresolv.confファイルが適切に設定されます。
 
 この一連のプロセスが完了すると、プラグインは JSON データを kubelet に返して操作の結果を示します。
 
